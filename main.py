@@ -1,3 +1,5 @@
+# copyright 2019 tankagons productions
+
 import pygame
 from game_visualiser import Visualizer
 from game_map import Grid
