@@ -93,9 +93,19 @@ class Visualizer:
                 if not tile.is_empty:
                     self.screen.blit(tile.land_image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
                     if tile.supported_unit is not None:
-                        self.screen.blit(tile.supported_unit.unit_image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                        if tile.supported_unit.selected:
+                            self.screen.blit(tile.supported_unit.unit_image_h,
+                                             (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                        else:
+                            self.screen.blit(tile.supported_unit.unit_image,
+                                             (tile.vertices[0][0] - 30, tile.vertices[0][1]))
                     elif tile.supported_building is not None:
-                        self.screen.blit(tile.supported_building.building_image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                        if tile.supported_building.selected:
+                            self.screen.blit(tile.supported_building.building_image_h,
+                                             (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                        else:
+                            self.screen.blit(tile.supported_building.building_image,
+                                             (tile.vertices[0][0] - 30, tile.vertices[0][1]))
 
         # Draw tile outlines
         hovered_tile = None

@@ -86,8 +86,12 @@ class Grid:
         Number of pixels the map is shifted in the y direction
     selected_tile:
         Tile that is currently selected
+    selected_building:
+        Building that is currently selected
     selected_unit:
         Unit that is currently selected
+    current_tile:
+        Tile that is selected or supports the selected building or selected unit
     sidebar:
          Object that stores building information
     spawn_tile:
@@ -102,7 +106,9 @@ class Grid:
     xoffset: int
     yoffset: int
     selected_tile: Tile
+    selected_building: Building
     selected_unit: Unit
+    current_tile: Tile
     sidebar: Sidebar
     spawn_tile: Tile
 
@@ -117,7 +123,9 @@ class Grid:
         self.xoffset = 0
         self.yoffset = 0
         self.selected_tile = None
+        self.selected_building = None
         self.selected_unit = None
+        self.current_tile = None
         self.sidebar = sidebar
         for _ in range(self.columns):
             self.tiles.append([])
@@ -232,21 +240,52 @@ class Grid:
         pass
 
     def handle_select(self, clicked_tile: Tile) -> None:
-        if clicked_tile is not None and self.selected_tile != clicked_tile:
-            if clicked_tile.highlighted and self.selected_unit is not None:
+        if clicked_tile is not None:
+            if self.selected_tile == clicked_tile:
+                self.unselect()
+            elif self.selected_unit is not None and clicked_tile.highlighted and \
+                    self.selected_unit != clicked_tile.supported_unit:
+                # Moves selected unit to clicked highlighted tile
+                for tile in self.current_tile.adjacent_tiles:
+                    if not tile.is_empty:
+                        tile.highlighted = False
                 clicked_tile.supported_unit = self.selected_unit
-                self.selected_tile.supported_unit = None
-            self.unselect()
-            self.selected_tile = clicked_tile
-            self.selected_tile.selected = True
-            if self.selected_tile.supported_unit is not None:
-                self.select_unit()
-        elif self.selected_tile is not None:
-            self.unselect()
+                self.current_tile.supported_unit = None
+                self.current_tile = clicked_tile
+                self.highlight(clicked_tile)
+            elif (self.selected_building is not None and self.selected_building == clicked_tile.supported_building) or \
+                    (self.selected_unit is not None and self.selected_unit == clicked_tile.supported_unit):
+                # Selects tile underneath building or unit
+                self.unselect()
+                self.select_tile(clicked_tile)
+                self.current_tile = clicked_tile
+            else:
+                self.unselect()
+                if clicked_tile.supported_unit is not None:
+                    self.select_unit(clicked_tile, clicked_tile.supported_unit)
+                    self.current_tile = clicked_tile
+                elif clicked_tile.supported_building is not None:
+                    self.select_building(clicked_tile.supported_building)
+                    self.current_tile = clicked_tile
+                else:
+                    self.select_tile(clicked_tile)
+                    self.current_tile = clicked_tile
 
-    def select_unit(self) -> None:
-        self.selected_unit = self.selected_tile.supported_unit
-        for tile in self.selected_tile.adjacent_tiles:
+    def select_tile(self, clicked_tile: Tile) -> None:
+        self.selected_tile = clicked_tile
+        self.selected_tile.selected = True
+
+    def select_building(self, supported_building: Building) -> None:
+        self.selected_building = supported_building
+        self.selected_building.selected = True
+
+    def select_unit(self, clicked_tile: Tile, supported_unit: Unit) -> None:
+        self.selected_unit = supported_unit
+        self.selected_unit.selected = True
+        self.highlight(clicked_tile)
+
+    def highlight(self, clicked_tile: Tile) -> None:
+        for tile in clicked_tile.adjacent_tiles:
             if not tile.is_empty and tile.supported_unit is None and tile.supported_building is None:
                 tile.highlighted = True
 
@@ -260,10 +299,17 @@ class Grid:
     def unselect(self) -> None:
         if self.selected_tile is not None:
             self.selected_tile.selected = False
-            for tile in self.selected_tile.adjacent_tiles:
+            self.selected_tile = None
+        elif self.selected_building is not None:
+            self.selected_building.selected = False
+            self.selected_building = None
+        elif self.selected_unit is not None:
+            self.selected_unit.selected = False
+            self.selected_unit = None
+            for tile in self.current_tile.adjacent_tiles:
                 if not tile.is_empty:
                     tile.highlighted = False
-        self.selected_tile = None
+        self.current_tile = None
 
     def _find_clicked_tile(self, mouse_grid_location: Tuple[int, int]) -> Optional[Tile]:
         if 0 <= mouse_grid_location[0] < self.columns and 0 <= mouse_grid_location[1] < self.rows:
