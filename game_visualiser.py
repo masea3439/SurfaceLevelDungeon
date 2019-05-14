@@ -27,6 +27,10 @@ class Visualizer:
         Which frame of the sprite to draw
     spawn_tile:
         Tile where the player spawns
+    life_image:
+        Image of the life resource icon
+    stratum_image:
+        Image of the stratum resource icon
     """
 
     width: int
@@ -38,6 +42,11 @@ class Visualizer:
     highlight_image: pygame.image
     sprite_frame: int
     spawn_tile: Tile
+    life_image: pygame.image
+    stratum_image: pygame.image
+    one: pygame.image
+    two: pygame.image
+    three: pygame.image
 
     def __init__(self, width: int, height: int, grid: Grid, sidebar: Sidebar, spawn_tile: Tile) -> None:
         self.game_running = True
@@ -49,6 +58,13 @@ class Visualizer:
         self.sprite_frame = 0
         self.spawn_tile = spawn_tile
         #self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+
+        self.life_image = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\life.png'))
+        self.stratum_image = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\stratum.png'))
+
+        self.one = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\1.png'))
+        self.two = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\2.png'))
+        self.three = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\3.png'))
 
         # Create highlight screen
         self.highlight_screen = pygame.Surface((120, 104))
@@ -65,7 +81,7 @@ class Visualizer:
         self.sidebar_background_screen.set_alpha(200)
 
     def render_display(self, mouse_grid_location: Tuple[int, int], mouse_sidebar_location: Optional[int],
-                       to_build: Optional[str], update_animations: bool) -> None:
+                       to_build: Optional[str], update_animations: bool, show_resources: bool) -> None:
         """Render the game to the screen
         """
         """
@@ -106,7 +122,18 @@ class Visualizer:
                         else:
                             self.screen.blit(tile.supported_building.building_image,
                                              (tile.vertices[0][0] - 30, tile.vertices[0][1]))
-
+                    if show_resources:
+                        for resource in tile.resources:
+                            if resource[0] == 'life':
+                                self.screen.blit(self.life_image, (tile.vertices[0][0]+17, tile.vertices[0][1]+39))
+                            elif resource[0] == 'stratum':
+                                self.screen.blit(self.stratum_image, (tile.vertices[0][0]+17, tile.vertices[0][1]+39))
+                            if resource[1] == 1:
+                                self.screen.blit(self.one, (tile.vertices[0][0] + 17, tile.vertices[0][1] + 14))
+                            elif resource[1] == 2:
+                                self.screen.blit(self.two, (tile.vertices[0][0] + 17, tile.vertices[0][1] + 14))
+                            elif resource[1] == 3:
+                                self.screen.blit(self.three, (tile.vertices[0][0] + 17, tile.vertices[0][1] + 14))
         # Draw tile outlines
         hovered_tile = None
         selected_tile = None

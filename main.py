@@ -56,6 +56,7 @@ class Game:
         to_build = None
         animation_tick = 0
         update_animations = False
+        show_resources = False
 
         while self.game_running:
             # Only run the game loop fps times per second
@@ -95,6 +96,13 @@ class Game:
                         #  update the location of the mouse for get_rel
                         pygame.mouse.get_rel()
 
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LCTRL:
+                        show_resources = True
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_LCTRL:
+                        show_resources = False
+
             # Calculate the mouse's position on the hex grid
             mouse_position = pygame.mouse.get_pos()
             mouse_grid_location = self.grid.find_mouse_grid_location(mouse_position)
@@ -102,7 +110,7 @@ class Game:
             if animation_tick == 45:
                 update_animations = True
 
-            self.visualizer.render_display(mouse_grid_location, mouse_sidebar_location, to_build, update_animations)
+            self.visualizer.render_display(mouse_grid_location, mouse_sidebar_location, to_build, update_animations, show_resources)
 
             if animation_tick == 45:
                 update_animations = False

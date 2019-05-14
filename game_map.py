@@ -29,6 +29,8 @@ class Tile:
         Unit on this tile
     animation_sprites:
         Sprites of the animation playing on the tile
+    resources:
+        Resources that can be extracted from the tile
     """
 
     vertices: List[List[int]]
@@ -38,6 +40,7 @@ class Tile:
     highlighted: bool
     supported_building: Optional[Building]
     supported_unit: Optional[Unit]
+    resources: List[Tuple[str, int]]
     #animation_sprites: List[pygame.image]
 
     def __init__(self, vertices: List[Tuple[int, int]] = None, land_name: str = None, supported_unit: Unit = None,
@@ -48,12 +51,22 @@ class Tile:
             self.land_image = None
             self.selected = None
             self.highlighted = None
+            self.supported_building = None
+            self.supported_unit = None
+            self.resources = None
         else:
             self.is_empty = False
             self.vertices = vertices
             self.land_image = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\' + land_name + '.png'))
             self.selected = False
             self.highlighted = False
+            # Set resource values depending on tile type
+            if land_name == 'forest':
+                self.resources = [('life', 2)]
+            elif land_name == 'mountain':
+                self.resources = [('stratum', 3)]
+            else:
+                self.resources = []
         self.supported_building = supported_building
         self.adjacent_tiles = []
         self.supported_unit = supported_unit
@@ -270,6 +283,8 @@ class Grid:
                 else:
                     self.select_tile(clicked_tile)
                     self.current_tile = clicked_tile
+        else:
+            self.unselect()
 
     def select_tile(self, clicked_tile: Tile) -> None:
         self.selected_tile = clicked_tile
