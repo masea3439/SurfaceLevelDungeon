@@ -107,7 +107,10 @@ class Visualizer:
         for sublist in self.grid.tiles:
             for tile in sublist:
                 if not tile.is_empty:
-                    self.screen.blit(tile.land_image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                    if tile.corrupted is not None and tile.corrupted:
+                        self.screen.blit(tile.corrupted_image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                    else:
+                        self.screen.blit(tile.land_image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
                     if tile.supported_unit is not None:
                         if tile.supported_unit.selected:
                             self.screen.blit(tile.supported_unit.unit_image_h,
@@ -122,6 +125,10 @@ class Visualizer:
                         else:
                             self.screen.blit(tile.supported_building.building_image,
                                              (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+                    if tile.animation_sprites:
+                        image = tile.get_animation()
+                        self.screen.blit(image, (tile.vertices[0][0] - 30, tile.vertices[0][1]))
+
                     if show_resources:
                         for resource in tile.resources:
                             if resource[0] == 'life':

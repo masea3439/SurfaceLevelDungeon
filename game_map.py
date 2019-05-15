@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 import pygame
 import os
 from game_overlay import Sidebar
-from game_unit import Unit
+from game_unit import Unit, Worker, Lich
 from game_building import Building
 
 
@@ -29,8 +29,16 @@ class Tile:
         Unit on this tile
     animation_sprites:
         Sprites of the animation playing on the tile
+    update_time:
+        Time between frames of animation
+    current_time:
+        Current time in ticks
     resources:
         Resources that can be extracted from the tile
+    corrupted:
+        If this tile has been harvested
+    corrupted_image:
+        Sprite of the corrupted land on this tile
     """
 
     vertices: List[List[int]]
@@ -41,7 +49,10 @@ class Tile:
     supported_building: Optional[Building]
     supported_unit: Optional[Unit]
     resources: List[Tuple[str, int]]
+    corrupted: bool
     #animation_sprites: List[pygame.image]
+    update_time: int
+    current_time: int
 
     def __init__(self, vertices: List[Tuple[int, int]] = None, land_name: str = None, supported_unit: Unit = None,
                  supported_building: Building = None) -> None:
@@ -54,23 +65,32 @@ class Tile:
             self.supported_building = None
             self.supported_unit = None
             self.resources = None
+            self.corrupted = None
+            self.corrupted_image = None
+            self.animation_sprites = None
+            self.update_time = None
         else:
             self.is_empty = False
             self.vertices = vertices
             self.land_image = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\' + land_name + '.png'))
             self.selected = False
             self.highlighted = False
+            self.corrupted = False
             # Set resource values depending on tile type
             if land_name == 'forest':
                 self.resources = [('life', 2)]
+                self.corrupted_image = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\' + land_name + '_c.png'))
             elif land_name == 'mountain':
                 self.resources = [('stratum', 3)]
+                self.corrupted_image = pygame.image.load(os.path.join(os.path.dirname(__file__), 'images\\' + land_name + '_c.png'))
             else:
                 self.resources = []
+                self.corrupted_image = None
         self.supported_building = supported_building
         self.adjacent_tiles = []
         self.supported_unit = supported_unit
         self.animation_sprites = None
+        self.update_time = 0
 
     def pan(self, movement: Tuple[int, int]) -> None:
         """Update the vertices of a tile after a pan
@@ -78,6 +98,22 @@ class Tile:
         for vertex in self.vertices:
             vertex[0] += movement[0]
             vertex[1] += movement[1]
+
+    def create_animation(self, images, update_time: int) -> None:
+        self.animation_sprites = images
+        self.update_time = update_time
+        self.current_time = 0
+
+    def get_animation(self):
+        self.current_time += 1
+        if len(self.animation_sprites) == int(self.current_time/self.update_time):
+            last_image = self.animation_sprites[len(self.animation_sprites)-1]
+            self.animation_sprites = []
+            self.update_time = 0
+            self.current_time = 0
+            return last_image
+        else:
+            return self.animation_sprites[int(self.current_time/self.update_time)]
 
 
 class Grid:
@@ -154,7 +190,7 @@ class Grid:
                         shifted_y += self.half_height
                     point_list = self._get_vertices(shifted_x, shifted_y)
                     if lines[index_lines][3] != 'None':
-                        new_unit = Unit(lines[index_lines][3])
+                        new_unit = self.create_unit(lines[index_lines][3])
                     else:
                         new_unit = None
                     new_tile = Tile(point_list, lines[index_lines][2], new_unit)
@@ -198,6 +234,12 @@ class Grid:
                             current_tile.adjacent_tiles.append(self.tiles[x][y+1])
                         if 0 <= x - 1 < self.columns and 0 <= y + 1 < self.rows:
                             current_tile.adjacent_tiles.append(self.tiles[x-1][y+1])
+
+    def create_unit(self, unit_name: str) -> Unit:
+        if unit_name == 'worker_test':
+            return Worker()
+        elif unit_name == 'lich':
+            return Lich()
 
     def _get_vertices(self, x: int, y: int) -> List[Tuple[int, int]]:
         """Uses the coordinates of the top right point of a hexagon to calculate the remaining points
@@ -265,6 +307,7 @@ class Grid:
                 clicked_tile.supported_unit = self.selected_unit
                 self.current_tile.supported_unit = None
                 self.current_tile = clicked_tile
+                self.current_tile.supported_unit.move_update(self.current_tile)
                 self.highlight(clicked_tile)
             elif (self.selected_building is not None and self.selected_building == clicked_tile.supported_building) or \
                     (self.selected_unit is not None and self.selected_unit == clicked_tile.supported_unit):
@@ -306,7 +349,7 @@ class Grid:
 
     def handle_build(self, clicked_tile: Tile, to_build: str) -> None:
         if clicked_tile is not None:
-            if clicked_tile.supported_building is None and clicked_tile.supported_unit is None:
+            if clicked_tile.supported_building is None and clicked_tile.supported_unit is None and clicked_tile.corrupted:
                 new_building = Building(to_build)
                 self.buildings.append(new_building)
                 clicked_tile.supported_building = new_building

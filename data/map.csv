@@ -12,6 +12,6 @@ tower_test
 3,2,spawn,None
 4,0,mountain,None
 4,1,forest,None
-4,2,forest,None
+4,2,forest,lich
 5,0,forest,None
 5,1,forest,None
